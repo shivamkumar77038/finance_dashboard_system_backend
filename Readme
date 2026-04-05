@@ -10,7 +10,6 @@ This documentation explains the setup, API design, architecture, and decisions f
 
 ```bash
 git clone <your-repo-url>
-cd backend_finance_dashboard
 ```
 
 ## 2. Install Dependencies
