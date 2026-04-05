@@ -1,0 +1,441 @@
+ 📚 Documentation
+
+The following documentation highlights the development approach adopted during the creation of the Finance Dashboard Backend.
+
+---
+
+#Setup Instructions
+
+##1. Clone the Repository
+
+```bash
+git clone <your-repo-url>
+cd backend_finance_dashboard
+```
+
+##2. Install Dependencies
+
+```bash
+npm install 
+```
+
+## 3. Configure Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+PORT=5000
+MONGO_URI=mongodb://127.0.0.1:27017/finance-dashboard
+JWT_SECRET=your_secret_key
+```
+
+---
+
+## 4. Start the Server
+
+```bash
+npm run dev
+```
+
+Server will run at:
+http://localhost:5000
+```
+
+---
+
+## API Design Overview
+
+The backend follows a **RESTful API design** with clear separation of concerns.
+
+##Base URL
+
+# API Explanation
+
+This section provides a detailed explanation of all available API endpoints, their purpose, request format, and responses.
+
+---
+
+# Authentication APIs
+
+## Register User
+
+**POST** `/api/auth/register`
+
+### Description
+
+Creates a new user with a specific role.
+
+### Request Body
+
+```json
+{
+  "name": "Shivam",
+  "email": "shivam@gmail.com",
+  "password": "123456",
+  "role": "admin"
+}
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "User registered",
+  "data": { ...user }
+}
+```
+
+---
+
+## Login User
+
+**POST** `/api/auth/login`
+
+### Description
+
+Authenticates user and returns JWT token.
+
+### Request Body
+
+```json
+{
+  "email": "shivam@gmail.com",
+  "password": "123456"
+}
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "Login success",
+  "data": {
+    "token": "JWT_TOKEN"
+  }
+}
+```
+
+---
+
+# Authorization
+
+All protected routes require:
+
+```
+Authorization: Bearer <token>
+```
+
+---
+
+# Financial Records APIs
+
+## Create Record
+
+**POST** `/api/records`
+
+### Access
+
+Admin only
+
+### Description
+
+Creates a new financial entry.
+
+### Request Body
+
+```json
+{
+  "amount": 5000,
+  "type": "income",
+  "category": "Salary",
+  "note": "Monthly salary"
+}
+```
+
+---
+
+## ➤ Get Records
+
+**GET** `/api/records`
+
+### Access
+
+Viewer, Analyst, Admin
+
+### Description
+
+Fetch all records with optional filters.
+
+### Query Parameters
+
+```
+?type=income
+?category=Food
+?startDate=2024-01-01&endDate=2024-12-31
+```
+
+---
+
+## Update Record
+
+**PUT** `/api/records/:id`
+
+### Access
+
+Admin only
+
+### Description
+
+Updates an existing record.
+
+---
+
+## Delete Record
+
+**DELETE** `/api/records/:id`
+
+### Access
+
+Admin only
+
+### Description
+
+Deletes a record permanently.
+
+---
+
+# Dashboard APIs
+
+## Get Summary
+
+**GET** `/api/dashboard`
+
+### Access
+
+Analyst, Admin
+
+### Description
+
+Returns aggregated financial data.
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "Summary",
+  "data": {
+    "totalIncome": 50000,
+    "totalExpense": 20000,
+    "netBalance": 30000,
+    "categoryBreakdown": {
+      "Food": 5000,
+      "Salary": 50000
+    }
+  }
+}
+```
+
+---
+
+# Error Handling
+
+All errors follow a consistent format:
+
+```json
+{
+  "success": false,
+  "message": "Error message"
+}
+```
+
+
+
+## Authentication
+
+* JWT-based authentication
+* Token must be sent in header:
+
+```
+Authorization: Bearer<token>
+```
+
+---
+
+## Role-Based Access Control (RBAC)
+
+| Role    | Access           |
+| ------- | ---------------- |
+| Viewer  | Read-only        |
+| Analyst | Read + dashboard |
+| Admin   | Full access      |
+
+RBAC is implemented using middleware to ensure **secure and scalable access control**.
+
+---
+
+## Financial Records
+
+Supports:
+
+* Create record (Admin)
+* Read records (All roles)
+* Update/Delete (Admin)
+* Filtering by:
+
+  * Type (income/expense)
+  * Category
+  * Date range
+
+---
+
+##  Dashboard APIs
+
+Provides aggregated data:
+
+* Total income
+* Total expenses
+* Net balance
+* Category breakdown
+
+These APIs demonstrate backend-level **data aggregation instead of frontend computation**.
+
+---
+
+# Architecture Decisions
+
+## 1. Layered Structure
+
+The project follows a modular architecture:
+
+* Controllers → Handle request/response
+* Models → Database schema
+* Routes → API endpoints
+* Middleware → Auth, validation, RBAC
+* Utils → Reusable logic
+
+---
+
+##2. Middleware-Based Design
+
+Used for:
+
+* Authentication (protect)
+* Role authorization (allowRoles)
+* Validation (validate)
+* Error handling (centralized)
+
+This keeps controllers **clean and focused on business logic**.
+
+---
+
+## 3. Utility Layer
+
+Created reusable helpers:
+
+* generateToken → JWT handling
+* asyncHandler → error-safe async code
+* apiResponse → consistent responses
+* validators → input validation
+
+---
+
+## 4. Error Handling
+
+* Centralized error middleware
+* Standard response format:
+
+```json
+{
+  "success": false,
+  "message": "Error message"
+}
+```
+
+---
+
+# Assumptions Made
+
+*Single-tenant system (no multi-organization separation)
+*All financial records are globally accessible (not user-isolated)
+*Authentication is basic JWT (no refresh token implemented)
+*Categories are free-text (no separate category collection)
+*No soft-delete (records are permanently deleted)
+
+---
+
+# Tradeoffs & Design Choices
+
+##1. Simplicity vs Scalability
+
+*Used **simple MongoDB queries** instead of complex aggregation pipelines
+*Easier to understand but less optimized for large-scale analytics
+
+---
+
+##2. No Service Layer
+
+*Business logic kept in controllers for simplicity
+*In large-scale apps, this would move to a **service layer**
+
+---
+
+##3. No Pagination
+
+*Records API returns all data
+*Tradeoff: simplicity vs performance for large datasets
+
+---
+
+##4. JWT Without Refresh Tokens
+
+*Simpler implementation
+*Tradeoff: less secure compared to refresh-token flow
+
+---
+
+#Security Considerations
+
+*Passwords hashed using bcrypt
+*JWT used for authentication
+*Role-based restrictions enforced
+*Input validation applied using express-validator
+
+---
+
+#Future Improvements
+
+*Pagination, sorting, and search
+*MongoDB aggregation pipelines
+*Refresh token authentication
+*Role-based dynamic permissions
+*Soft delete support
+*API rate limiting
+*Swagger documentation
+
+---
+
+# Testing Strategy (Suggested)
+
+*Unit testing for controllers
+*Integration testing for APIs
+*Use tools like:
+
+  Jest
+  Supertest
+  Postman
+
+---
+
+#Summary
+
+This backend demonstrates:
+
+Clean architecture
+Secure role-based access control
+Scalable API design
+Real-world backend practices
+
+
